@@ -105,7 +105,7 @@ int   baseSpeed          = 190;   // Tốc độ cơ bản bám line (100 - 255)
 int   spinSpeed          = 140;   // Tốc độ xoay compa tìm vạch (90 - 220)
 int   pivotFwd           = 180;   // Bánh ngoài khi ôm cua 90 độ (120 - 255)
 int   pivotRev           = -45;   // Bánh trong khi ôm cua 90 độ (-100 - 0)
-int   centerTestSpd      = 90;    // Tốc độ xoay khi test căn tâm (70 - 150)
+int   centerTestSpd      = 90;    // Tốc độ xoay khi test căn tâm (70 - 255)
 int   brakePwm           = 100;   // Lực phanh ngược dập quán tính xoay (80 - 200)
 int   brakeTime          = 14;    // Thời gian xung phanh ngược (10 - 40 ms)
 
@@ -596,16 +596,16 @@ void runTestCentering() {
 
   digitalWrite(LED_PIN, LOW);
 
-  // 3. Tốc độ bò chậm tỉ lệ theo khoảng cách để triệt tiêu hoàn toàn quán tính
-  // Ở cự ly gần (|error| < 0.8), dùng xung bò 45-50 PWM để dừng chuẩn xác, không bị quán tính văng lố tâm
+  // 3. Tốc độ xoay căn tâm tỉ lệ động theo thanh trượt centerTestSpd (70 - 255)
   int spd;
   if (fabs(error) < 0.8f) {
-    spd = 45; // Tốc độ bò êm ái triệt tiêu quán tính
+    spd = centerTestSpd * 50 / 100; // Khi gần tâm: lấy 50% lực cài đặt để bò êm không lố
   } else if (fabs(error) < 1.8f) {
-    spd = 65; // Tiếp cận vừa phải
+    spd = centerTestSpd * 85 / 100; // Cự ly vừa: lấy 85% lực cài đặt
   } else {
-    spd = (centerTestSpd < 90) ? centerTestSpd : 90; // Tiếp cận từ xa
+    spd = centerTestSpd;            // Cự ly xa: lấy 100% lực thanh trượt Web
   }
+  spd = constrain(spd, 0, 255);
 
   if (error < 0) {
     lastBrakeDir = -1;
@@ -1109,7 +1109,7 @@ const char INDEX_HTML[] PROGMEM = R"rawliteral(
 
     <div class="form-group">
       <label>Tốc độ xoay căn tâm (Centering Speed): <span id="v-cspd">90</span></label>
-      <input type="range" id="in-cspd" min="70" max="150" step="5" value="90" oninput="updateVal('cspd', this.value)">
+      <input type="range" id="in-cspd" min="70" max="255" step="5" value="90" oninput="updateVal('cspd', this.value)">
     </div>
 
     <div class="form-group">
@@ -1518,7 +1518,7 @@ void setupWebServer() {
     if (server.hasArg("spin"))     spinSpeed = constrain(server.arg("spin").toInt(), 90, 220);
     if (server.hasArg("pfwd"))     pivotFwd = constrain(server.arg("pfwd").toInt(), 120, 255);
     if (server.hasArg("prev"))     pivotRev = constrain(server.arg("prev").toInt(), -100, 0);
-    if (server.hasArg("cspd"))     centerTestSpd = constrain(server.arg("cspd").toInt(), 70, 150);
+    if (server.hasArg("cspd"))     centerTestSpd = constrain(server.arg("cspd").toInt(), 70, 255);
     if (server.hasArg("bpwm"))     brakePwm = constrain(server.arg("bpwm").toInt(), 80, 200);
     if (server.hasArg("btim"))     brakeTime = constrain(server.arg("btim").toInt(), 10, 40);
     if (server.hasArg("smooth"))   STEER_SMOOTH = constrain(server.arg("smooth").toFloat(), 0.10f, 0.80f);
